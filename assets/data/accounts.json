@@ -1,0 +1,18 @@
+{
+  "accounts": [
+    {
+      "id": "1",
+      "name": "Maaş Hesabı",
+      "balance": 15450.50,
+      "iban": "TR120006200000001234567890",
+      "currency": "TL"
+    },
+    {
+      "id": "2",
+      "name": "Altın Hesabı",
+      "balance": 45.8,
+      "iban": "TR980006200000000987654321",
+      "currency": "GR"
+    }
+  ]
+}
