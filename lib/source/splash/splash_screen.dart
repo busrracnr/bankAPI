@@ -45,7 +45,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     border: Border.all(color: Colors.teal, width: 3),
                   ),
                   child: const Icon(
-                    Icons.palm_tree,
+                    Icons.account_balance_wallet,
                     size: 70,
                     color: Colors.teal,
                   ),
