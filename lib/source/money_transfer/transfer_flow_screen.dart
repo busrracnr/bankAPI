@@ -201,8 +201,62 @@ class TransferFlowScreen extends ConsumerWidget {
   }
 
   // Diğer boş sekmeler için taslaklar
-  Widget _buildIbanTab(WidgetRef ref) => const Center(child: Text("IBAN Giriş Alanı"));
-  Widget _buildAccountTab(WidgetRef ref) => const Center(child: Text("Hesap No Giriş Alanı"));
+  Widget _buildIbanTab(WidgetRef ref) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      children: [
+        // Uyarı Mesajı
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF3CD),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Text(
+            "Kayıtlı İşlemlerden Yap",
+            style: TextStyle(color: Color(0xFFB8860B), fontSize: 13, fontWeight: FontWeight.w500),
+          ),
+        ),
+        _customInput(label: "IBAN", hint: "Giriniz", icon: Icons.camera_alt),
+        _customInput(label: "Alıcı Adı Soyadı", hint: "Giriniz"),
+        _customInput(label: "İşlem Tarihi", hint: "01.04.2026", icon: Icons.chevron_right),
+        _buildSwitchRow("Bakiyenin tümünü kullan"),
+        _customInput(label: "Tutar", hint: "Giriniz", suffix: "TL"),
+        _customInput(label: "Ödeme Türü Seçimi", hint: "Bireysel Ödeme", icon: Icons.chevron_right),
+        _customInput(label: "Açıklama", hint: "İsteğe Bağlı"),
+        _buildSwitchRow("Kayıtlı işlemlere ekle"),
+      ],
+    );
+  }
+  Widget _buildAccountTab(WidgetRef ref) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      children: [
+        // Uyarı Mesajı
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF3CD),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Text(
+            "Kayıtlı İşlemlerden Yap",
+            style: TextStyle(color: Color(0xFFB8860B), fontSize: 13, fontWeight: FontWeight.w500),
+          ),
+        ),
+        _customInput(label: "Hesap No", hint: "Giriniz"),
+        _customInput(label: "Alıcı Adı Soyadı", hint: "Giriniz"),
+        _customInput(label: "İşlem Tarihi", hint: "01.04.2026", icon: Icons.chevron_right),
+        _buildSwitchRow("Bakiyenin tümünü kullan"),
+        _customInput(label: "Tutar", hint: "Giriniz", suffix: "TL"),
+        _customInput(label: "Ödeme Türü Seçimi", hint: "Bireysel Ödeme", icon: Icons.chevron_right),
+        _customInput(label: "Açıklama", hint: "İsteğe Bağlı"),
+        _buildSwitchRow("Kayıtlı işlemlere ekle"),
+      ],
+    );
+  }
   Widget _buildQrTab() => const Center(child: Text("QR Kod Okuyucu"));
   Widget _buildOtherTab() => const Center(child: Text("Diğer İşlemler"));
 
