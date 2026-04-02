@@ -1,23 +1,20 @@
 import 'package:flutter/material.dart';
 
-class AccountBalanceCard extends StatefulWidget {
+class AccountBalanceCard extends StatelessWidget {
   final String accountNo;
   final double balance;
+  final bool isBalanceVisible;
+  final VoidCallback onBalanceToggle;
   final VoidCallback? onAllAccountsTap;
 
   const AccountBalanceCard({
     super.key,
     required this.accountNo,
     required this.balance,
+    required this.isBalanceVisible,
+    required this.onBalanceToggle,
     this.onAllAccountsTap,
   });
-
-  @override
-  State<AccountBalanceCard> createState() => _AccountBalanceCardState();
-}
-
-class _AccountBalanceCardState extends State<AccountBalanceCard> {
-  bool _isBalanceVisible = true;
 
   @override
   Widget build(BuildContext context) {
@@ -31,16 +28,12 @@ class _AccountBalanceCardState extends State<AccountBalanceCard> {
               children: [
                 const Icon(Icons.account_balance_wallet, color: Colors.teal, size: 40),
                 const SizedBox(width: 12),
-                Text(widget.accountNo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.teal)),
+                Text(accountNo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.teal)),
                 const Spacer(),
                 GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _isBalanceVisible = !_isBalanceVisible;
-                    });
-                  },
+                  onTap: onBalanceToggle,
                   child: Icon(
-                    _isBalanceVisible ? Icons.visibility : Icons.visibility_off,
+                    isBalanceVisible ? Icons.visibility : Icons.visibility_off,
                     color: Colors.teal,
                   ),
                 ),
@@ -59,8 +52,8 @@ class _AccountBalanceCardState extends State<AccountBalanceCard> {
                   children: [
                     const TextSpan(text: "Bakiye: "),
                     TextSpan(
-                      text: _isBalanceVisible 
-                        ? widget.balance.toStringAsFixed(2)
+                      text: isBalanceVisible 
+                        ? balance.toStringAsFixed(2)
                         : "*****",
                       style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                     ),
@@ -71,7 +64,7 @@ class _AccountBalanceCardState extends State<AccountBalanceCard> {
             ),
             const Divider(height: 30),
             GestureDetector(
-              onTap: widget.onAllAccountsTap,
+              onTap: onAllAccountsTap,
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [

@@ -14,6 +14,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   late PageController _pageController;
+  bool _isBalanceVisible = true;
 
   @override
   void initState() {
@@ -75,6 +76,12 @@ class _HomeScreenState extends State<HomeScreen> {
           AccountBalanceCard(
             accountNo: "98750438 - 1",
             balance: 689.43,
+            isBalanceVisible: _isBalanceVisible,
+            onBalanceToggle: () {
+              setState(() {
+                _isBalanceVisible = !_isBalanceVisible;
+              });
+            },
             onAllAccountsTap: () {
               Navigator.push(
                 context,
@@ -200,11 +207,17 @@ class _HomeScreenState extends State<HomeScreen> {
       child: ListTile(
         title: const Text("01.04.2026", style: TextStyle(fontWeight: FontWeight.bold)),
         subtitle: const Text("Firma Adı: TAVUK DUNYASI\nBURDUR BURDUR, Harcama"),
-        trailing: const Column(
+        trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text("-455,00 TL", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-            Text("Bakiye: 689,43 TL", style: TextStyle(fontSize: 10)),
+            Text(
+              _isBalanceVisible ? "-455,00 TL" : "**** TL",
+              style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              _isBalanceVisible ? "Bakiye: 689,43 TL" : "Bakiye: **** TL",
+              style: const TextStyle(fontSize: 10),
+            ),
           ],
         ),
       ),
