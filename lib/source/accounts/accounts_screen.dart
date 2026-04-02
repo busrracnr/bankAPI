@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../action/accounts/account_filter_manager.dart';
+import 'filter_accounts_screen.dart';
 
-class AccountsScreen extends StatefulWidget {
+class AccountsScreen extends ConsumerStatefulWidget {
   const AccountsScreen({super.key});
 
   @override
-  State<AccountsScreen> createState() => _AccountsScreenState();
+  ConsumerState<AccountsScreen> createState() => _AccountsScreenState();
 }
 
-class _AccountsScreenState extends State<AccountsScreen> with TickerProviderStateMixin {
+class _AccountsScreenState extends ConsumerState<AccountsScreen> with TickerProviderStateMixin {
   int _selectedTab = 0;
+  late TabController _tabController;
 
   // Örnek hesap verileri
   final List<Map<String, dynamic>> myAccounts = [
@@ -45,6 +49,50 @@ class _AccountsScreenState extends State<AccountsScreen> with TickerProviderStat
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  List<Map<String, dynamic>> _getFilteredAccounts() {
+    final filterState = ref.read(accountFilterProvider);
+    
+    return myAccounts.where((account) {
+      // Sadece Açık Hesaplar
+      if (filterState.onlyOpenAccounts) {
+        if (account["balance"].toString().contains("0,00") || 
+            account["balance"].toString().contains("0.00")) {
+          return false;
+        }
+      }
+
+      // Sadece Kullanılabilir Bakiyeli Hesaplar
+      if (filterState.onlyAvailableBalance) {
+        if (account["balance"].toString().contains("0,00") || 
+            account["balance"].toString().contains("0.00")) {
+          return false;
+        }
+      }
+
+      // Ortak Hesaplar seçeneği
+      if (!filterState.commonAccounts) {
+        // Ortak hesapları gizle (isim içinde "ortak" varsa)
+        if (account["type"].toString().toLowerCase().contains("ortak")) {
+          return false;
+        }
+      }
+
+      return true;
+    }).toList();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F4F7),
@@ -59,7 +107,12 @@ class _AccountsScreenState extends State<AccountsScreen> with TickerProviderStat
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: Colors.teal),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const FilterAccountsScreen()),
+              );
+            },
           ),
         ],
       ),
@@ -69,15 +122,16 @@ class _AccountsScreenState extends State<AccountsScreen> with TickerProviderStat
           Container(
             color: Colors.white,
             child: TabBar(
-              controller: TabController(length: 3, vsync: this),
+              controller: _tabController,
+              indicatorColor: Colors.teal,
+              indicatorWeight: 3,
+              labelColor: Colors.black,
+              unselectedLabelColor: Colors.grey,
               onTap: (index) {
                 setState(() {
                   _selectedTab = index;
                 });
               },
-              indicatorColor: Colors.teal,
-              labelColor: Colors.black,
-              unselectedLabelColor: Colors.grey,
               tabs: const [
                 Tab(text: "Cari Hesaplarım"),
                 Tab(text: "Katılma Hesaplarım"),
@@ -104,6 +158,8 @@ class _AccountsScreenState extends State<AccountsScreen> with TickerProviderStat
   Widget _buildTabContent() {
     if (_selectedTab == 0) {
       // Cari hesaplarım
+      final filteredAccounts = _getFilteredAccounts();
+      
       return ListView(
         padding: const EdgeInsets.symmetric(vertical: 16),
         children: [
@@ -134,7 +190,24 @@ class _AccountsScreenState extends State<AccountsScreen> with TickerProviderStat
           const SizedBox(height: 16),
           
           // Hesap listesi
-          ...myAccounts.map((account) => _buildAccountCard(account)).toList(),
+          if (filteredAccounts.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: Column(
+                  children: [
+                    Icon(Icons.folder_open_outlined, size: 64, color: Colors.grey.shade300),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Filtre kriterlerine uygun hesap bulunamadı.",
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ...filteredAccounts.map((account) => _buildAccountCard(account)).toList(),
         ],
       );
     } else if (_selectedTab == 1) {
