@@ -6,7 +6,7 @@ class AccountFilterState {
   final bool commonAccounts;
 
   AccountFilterState({
-    this.onlyOpenAccounts = true,
+    this.onlyOpenAccounts = false,
     this.onlyAvailableBalance = false,
     this.commonAccounts = true,
   });
