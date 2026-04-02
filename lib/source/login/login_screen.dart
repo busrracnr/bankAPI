@@ -163,6 +163,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         controller: _passwordController,
                         obscureText: true,
                         textAlign: TextAlign.center,
+                        onSubmitted: (_) => _handleLogin(),
                         decoration: const InputDecoration(
                           hintText: "Şifre giriniz",
                           hintStyle: TextStyle(color: Colors.grey, fontSize: 13),
