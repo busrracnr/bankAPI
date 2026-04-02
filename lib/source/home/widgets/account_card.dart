@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class AccountBalanceCard extends StatelessWidget {
+class AccountBalanceCard extends StatefulWidget {
   final String accountNo;
   final double balance;
   final VoidCallback? onAllAccountsTap;
@@ -11,6 +11,13 @@ class AccountBalanceCard extends StatelessWidget {
     required this.balance,
     this.onAllAccountsTap,
   });
+
+  @override
+  State<AccountBalanceCard> createState() => _AccountBalanceCardState();
+}
+
+class _AccountBalanceCardState extends State<AccountBalanceCard> {
+  bool _isBalanceVisible = true;
 
   @override
   Widget build(BuildContext context) {
@@ -24,9 +31,19 @@ class AccountBalanceCard extends StatelessWidget {
               children: [
                 const Icon(Icons.account_balance_wallet, color: Colors.teal, size: 40),
                 const SizedBox(width: 12),
-                Text(accountNo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.teal)),
+                Text(widget.accountNo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.teal)),
                 const Spacer(),
-                const Icon(Icons.visibility_outlined, color: Colors.teal),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isBalanceVisible = !_isBalanceVisible;
+                    });
+                  },
+                  child: Icon(
+                    _isBalanceVisible ? Icons.visibility : Icons.visibility_off,
+                    color: Colors.teal,
+                  ),
+                ),
                 const SizedBox(width: 10),
                 const Icon(Icons.share_outlined, color: Colors.teal),
                 const SizedBox(width: 10),
@@ -41,7 +58,12 @@ class AccountBalanceCard extends StatelessWidget {
                   style: const TextStyle(color: Colors.black, fontSize: 18),
                   children: [
                     const TextSpan(text: "Bakiye: "),
-                    TextSpan(text: balance.toStringAsFixed(2), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+                    TextSpan(
+                      text: _isBalanceVisible 
+                        ? widget.balance.toStringAsFixed(2)
+                        : "*****",
+                      style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                    ),
                     const TextSpan(text: " TL"),
                   ],
                 ),
@@ -49,7 +71,7 @@ class AccountBalanceCard extends StatelessWidget {
             ),
             const Divider(height: 30),
             GestureDetector(
-              onTap: onAllAccountsTap,
+              onTap: widget.onAllAccountsTap,
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
