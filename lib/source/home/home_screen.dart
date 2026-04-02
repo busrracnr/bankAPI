@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'widgets/account_card.dart';
 import '../money_transfer/transfer_flow_screen.dart';
 import '../money_transfer/money_transfer_menu_screen.dart';
+import '../accounts/accounts_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -143,6 +144,14 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const MoneyTransferMenuScreen()),
+          );
+        }
+        
+        // Menü tıklandığında hesaplar sayfasına git (index 4)
+        if (index == 4) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AccountsScreen()),
           );
         }
       },
