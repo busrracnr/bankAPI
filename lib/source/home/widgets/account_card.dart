@@ -3,8 +3,14 @@ import 'package:flutter/material.dart';
 class AccountBalanceCard extends StatelessWidget {
   final String accountNo;
   final double balance;
+  final VoidCallback? onAllAccountsTap;
 
-  const AccountBalanceCard({super.key, required this.accountNo, required this.balance});
+  const AccountBalanceCard({
+    super.key,
+    required this.accountNo,
+    required this.balance,
+    this.onAllAccountsTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -42,12 +48,15 @@ class AccountBalanceCard extends StatelessWidget {
               ),
             ),
             const Divider(height: 30),
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text("Tüm Hesaplarım", style: TextStyle(color: Colors.teal, fontWeight: FontWeight.w600)),
-                Icon(Icons.chevron_right, color: Colors.teal),
-              ],
+            GestureDetector(
+              onTap: onAllAccountsTap,
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text("Tüm Hesaplarım", style: TextStyle(color: Colors.teal, fontWeight: FontWeight.w600)),
+                  Icon(Icons.chevron_right, color: Colors.teal),
+                ],
+              ),
             )
           ],
         ),

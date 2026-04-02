@@ -37,7 +37,16 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildTabs(),
-            const AccountBalanceCard(accountNo: "98750438 - 1", balance: 689.43),
+            AccountBalanceCard(
+              accountNo: "98750438 - 1",
+              balance: 689.43,
+              onAllAccountsTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AccountsScreen()),
+                );
+              },
+            ),
             _buildSectionTitle("Hızlı İşlemler"),
             _buildQuickActions(context),
             _buildSectionTitle("Son İşlem"),
@@ -144,14 +153,6 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const MoneyTransferMenuScreen()),
-          );
-        }
-        
-        // Menü tıklandığında hesaplar sayfasına git (index 4)
-        if (index == 4) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AccountsScreen()),
           );
         }
       },
