@@ -27,32 +27,50 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Arka plan rengini Theme'dan çekiyoruz (Kuveyt Türk Yeşili)
-      backgroundColor: Theme.of(context).colorScheme.primary,
+      backgroundColor: Colors.white,
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Banka Logosu (Yerine ikon koyuyoruz - Altın Rengi)
-            Icon(
-              Icons.account_balance, 
-              size: 100, 
-              color: Theme.of(context).colorScheme.secondary // Altın/Gold renk
+            const SizedBox.expand(),
+            // Logo ve Başlık
+            Column(
+              children: [
+                // Kuveyt Türk Logo (Palm Tree Icon)
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.teal, width: 3),
+                  ),
+                  child: const Icon(
+                    Icons.palm_tree,
+                    size: 70,
+                    color: Colors.teal,
+                  ),
+                ),
+                const SizedBox(height: 30),
+                const Text(
+                  "Kuveit Türk Mobil",
+                  style: TextStyle(
+                    color: Colors.teal,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 25),
-            const Text(
-              "Kuveyt Türk",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2
-              ),
-            ),
-            const SizedBox(height: 50),
-            // Yükleniyor belirteci (Yine altın renginde)
-            CircularProgressIndicator(
-              color: Theme.of(context).colorScheme.secondary,
+            // Alt kısımda Loading
+            Column(
+              children: [
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.teal.shade700),
+                  strokeWidth: 3,
+                ),
+                const SizedBox(height: 30),
+              ],
             ),
           ],
         ),
