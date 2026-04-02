@@ -38,9 +38,15 @@ class AccountBalanceCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Icon(Icons.share_outlined, color: Colors.teal),
+                GestureDetector(
+                  onTap: () => _showShareMenu(context),
+                  child: const Icon(Icons.share_outlined, color: Colors.teal),
+                ),
                 const SizedBox(width: 10),
-                const Icon(Icons.more_horiz, color: Colors.teal),
+                GestureDetector(
+                  onTap: () => _showMoreMenu(context),
+                  child: const Icon(Icons.more_horiz, color: Colors.teal),
+                ),
               ],
             ),
             const SizedBox(height: 25),
@@ -75,6 +81,136 @@ class AccountBalanceCard extends StatelessWidget {
             )
           ],
         ),
+      ),
+    );
+  }
+
+  void _showShareMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                accountNo,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                "TR09002050000098750438000001",
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 20),
+              _buildBottomSheetItem("IBAN Kopyala", Icons.copy, Colors.orange),
+              const SizedBox(height: 12),
+              _buildBottomSheetItem("IBAN Bilgisi Paylaş", Icons.share, Colors.orange),
+              const SizedBox(height: 12),
+              _buildBottomSheetItem("Karekod Paylaş", Icons.qr_code_2, Colors.orange),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.grey),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text(
+                    "Vazgeç",
+                    style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showMoreMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Hesap Detayı",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange,
+                ),
+              ),
+              const SizedBox(height: 20),
+              _buildBottomSheetItem("Ana Sayfa Favori Hesap / Kart Seçimi", Icons.favorite_border, Colors.orange),
+              const SizedBox(height: 12),
+              _buildBottomSheetItem("Para Transferi Yap", Icons.send, Colors.orange),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.grey),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text(
+                    "Vazgeç",
+                    style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBottomSheetItem(String title, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black87,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }
