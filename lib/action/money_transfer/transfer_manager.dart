@@ -52,4 +52,4 @@ class TransferNotifier extends Notifier<TransferFormState> {
   void reset() => state = TransferFormState();
 }
 
-final transferProvider = NotifierProvider.autoDispose<TransferNotifier, TransferFormState>(() => TransferNotifier());
+final transferProvider = NotifierProvider<TransferNotifier, TransferFormState>(() => TransferNotifier());
