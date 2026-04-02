@@ -28,7 +28,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _handleLogin() {
-    final userManager = ref.read(userProvider.notifier);
+    final userNotifier = ref.read(userProvider.notifier);
+    final authNotifier = ref.read(isAuthenticatedProvider.notifier);
     final password = _passwordController.text.trim();
 
     if (password.isEmpty) {
@@ -47,8 +48,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     // Şifre doğrulaması
-    if (userManager.authenticate(password)) {
-      ref.read(isAuthenticatedProvider.notifier).setAuthenticated(true);
+    if (userNotifier.authenticate(password)) {
+      authNotifier.setAuthenticated(true);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -123,12 +124,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.teal, width: 2),
-                      image: const DecorationImage(
-                        image: NetworkImage(
-                          "https://via.placeholder.com/80?text=ZB",
-                        ),
-                        fit: BoxFit.cover,
-                      ),
+                      color: Colors.teal.shade50,
+                    ),
+                    child: const Icon(
+                      Icons.account_circle,
+                      size: 70,
+                      color: Colors.teal,
                     ),
                   ),
                   const SizedBox(height: 16),

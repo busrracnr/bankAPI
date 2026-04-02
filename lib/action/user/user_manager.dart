@@ -12,17 +12,12 @@ class User {
   });
 }
 
-class UserManager extends StateNotifier<User?> {
-  UserManager() : super(null) {
-    // Uygulama başladığında varsayılan kullanıcı yükle
-    _initializeUser();
-  }
-
-  void _initializeUser() {
-    // Zeynep Büşra Çınar kullanıcısı
-    state = User(
+class UserNotifier extends Notifier<User?> {
+  @override
+  User? build() {
+    return User(
       name: "Zeynep Büşra Çınar",
-      password: "1234", // Belirlenen şifre
+      password: "1234",
       id: "12345678901",
     );
   }
@@ -39,24 +34,29 @@ class UserManager extends StateNotifier<User?> {
   }
 
   void logout() {
-    // Oturumu kapat (opsiyonel)
+    state = null;
   }
 }
 
-final userProvider = StateNotifierProvider<UserManager, User?>((ref) {
-  return UserManager();
-});
-
-final isAuthenticatedProvider = StateNotifierProvider<IsAuthenticatedNotifier, bool>((ref) {
-  return IsAuthenticatedNotifier();
-});
-
-class IsAuthenticatedNotifier extends StateNotifier<bool> {
-  IsAuthenticatedNotifier() : super(false);
+class AuthNotifier extends Notifier<bool> {
+  @override
+  bool build() {
+    return false;
+  }
 
   void setAuthenticated(bool value) {
     state = value;
   }
 
-  bool get isAuthenticated => state;
+  void logout() {
+    state = false;
+  }
 }
+
+final userProvider = NotifierProvider<UserNotifier, User?>(() {
+  return UserNotifier();
+});
+
+final isAuthenticatedProvider = NotifierProvider<AuthNotifier, bool>(() {
+  return AuthNotifier();
+});
