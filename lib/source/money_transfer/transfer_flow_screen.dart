@@ -180,6 +180,47 @@ class TransferFlowScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildDatePickerField({required String label}) {
+    return Builder(
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey.shade100))),
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(label, style: const TextStyle(color: Colors.black54, fontSize: 13)),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  DateTime.now().toString().split(' ')[0].split('-').reversed.join('.'),
+                  style: const TextStyle(color: Colors.black, fontSize: 13, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.chevron_right, color: Colors.orange, size: 20),
+              ],
+            ),
+            onTap: () async {
+              final DateTime? picked = await showDatePicker(
+                context: context,
+                initialDate: DateTime.now(),
+                firstDate: DateTime(2000),
+                lastDate: DateTime(2100),
+                locale: const Locale('tr', 'TR'),
+              );
+              if (picked != null) {
+                // Seçilen tarihi formatla (DD.MM.YYYY)
+                String formattedDate = 
+                    "${picked.day.toString().padLeft(2, '0')}.${picked.month.toString().padLeft(2, '0')}.${picked.year}";
+                // Burada tarihi state'e kaydedebilirsin
+                print("Seçilen tarih: $formattedDate");
+              }
+            },
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildBottomArea(WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -220,7 +261,7 @@ class TransferFlowScreen extends ConsumerWidget {
         ),
         _customInput(label: "IBAN", hint: "Giriniz", icon: Icons.camera_alt),
         _customInput(label: "Alıcı Adı Soyadı", hint: "Giriniz"),
-        _customInput(label: "İşlem Tarihi", hint: "01.04.2026", icon: Icons.chevron_right),
+        _buildDatePickerField(label: "İşlem Tarihi"),
         _buildSwitchRow("Bakiyenin tümünü kullan"),
         _customInput(label: "Tutar", hint: "Giriniz", suffix: "TL"),
         _customInput(label: "Ödeme Türü Seçimi", hint: "Bireysel Ödeme", icon: Icons.chevron_right),
@@ -248,7 +289,7 @@ class TransferFlowScreen extends ConsumerWidget {
         ),
         _customInput(label: "Hesap No", hint: "Giriniz"),
         _customInput(label: "Alıcı Adı Soyadı", hint: "Giriniz"),
-        _customInput(label: "İşlem Tarihi", hint: "01.04.2026", icon: Icons.chevron_right),
+        _buildDatePickerField(label: "İşlem Tarihi"),
         _buildSwitchRow("Bakiyenin tümünü kullan"),
         _customInput(label: "Tutar", hint: "Giriniz", suffix: "TL"),
         _customInput(label: "Ödeme Türü Seçimi", hint: "Bireysel Ödeme", icon: Icons.chevron_right),
