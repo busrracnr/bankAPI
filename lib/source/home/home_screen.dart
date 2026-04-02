@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'widgets/account_card.dart';
 import '../money_transfer/transfer_flow_screen.dart';
-import '../money_transfer/money_transfer_menu_screen.dart';
+import 'menu_screen.dart';
 import '../accounts/accounts_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -17,13 +17,16 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F7), // Arka plan hafif gri
+      backgroundColor: const Color(0xFFF2F4F7),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: const Padding(
           padding: EdgeInsets.all(8.0),
-          child: CircleAvatar(backgroundImage: NetworkImage('https://via.placeholder.com/150')),
+          child: CircleAvatar(
+            backgroundColor: Color(0xFFE0F2F1),
+            child: Icon(Icons.account_circle, color: Colors.teal, size: 28),
+          ),
         ),
         title: const Text("Zeynep Büşra Çınar", style: TextStyle(fontSize: 16, color: Colors.black87)),
         actions: [
@@ -32,29 +35,82 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       bottomNavigationBar: _buildBottomBar(),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildTabs(),
-            AccountBalanceCard(
-              accountNo: "98750438 - 1",
-              balance: 689.43,
-              onAllAccountsTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AccountsScreen()),
-                );
-              },
-            ),
-            _buildSectionTitle("Hızlı İşlemler"),
-            _buildQuickActions(context),
-            _buildSectionTitle("Son İşlem"),
-            _buildLastTransaction(),
-          ],
-        ),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: [
+          _buildHomeContent(),
+          _buildDovizYatirimContent(),
+          _buildDurumContent(),
+          _buildParaTransferiContent(),
+          _buildMenuContent(),
+        ],
       ),
     );
+  }
+
+  Widget _buildHomeContent() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildTabs(),
+          AccountBalanceCard(
+            accountNo: "98750438 - 1",
+            balance: 689.43,
+            onAllAccountsTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AccountsScreen()),
+              );
+            },
+          ),
+          _buildSectionTitle("Hızlı İşlemler"),
+          _buildQuickActions(context),
+          _buildSectionTitle("Son İşlem"),
+          _buildLastTransaction(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDovizYatirimContent() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.trending_up, size: 80, color: Colors.grey.shade300),
+          const SizedBox(height: 16),
+          Text(
+            "Döviz/Yatırım",
+            style: TextStyle(fontSize: 18, color: Colors.grey.shade600, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDurumContent() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.assessment, size: 80, color: Colors.grey.shade300),
+          const SizedBox(height: 16),
+          Text(
+            "Durumum",
+            style: TextStyle(fontSize: 18, color: Colors.grey.shade600, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildParaTransferiContent() {
+    return const TransferFlowScreen(initialTabIndex: 0);
+  }
+
+  Widget _buildMenuContent() {
+    return const MenuScreen();
   }
 
   Widget _buildTabs() {
@@ -147,14 +203,6 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           _selectedIndex = index;
         });
-        
-        // Para Transferi menüsü tıklandığında (index 3)
-        if (index == 3) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const MoneyTransferMenuScreen()),
-          );
-        }
       },
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: "Ana Sayfa"),
