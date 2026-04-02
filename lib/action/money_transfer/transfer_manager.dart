@@ -48,6 +48,10 @@ class TransferNotifier extends Notifier<TransferFormState> {
     );
   }
 
+  void setAmount(double amount) {
+    state = state.copyWith(amount: amount);
+  }
+
   void complete() => state = state.copyWith(step: TransferStep.success);
   void reset() => state = TransferFormState();
 }
