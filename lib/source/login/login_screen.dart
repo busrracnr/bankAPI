@@ -173,7 +173,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
+                  // Giriş Yap Butonu
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 50,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.teal),
+                                strokeWidth: 3,
+                              ),
+                            ),
+                          )
+                        : PrimaryButton(
+                            text: "Giriş Yap",
+                            onPressed: _handleLogin,
+                          ),
+                  ),
+                  const SizedBox(height: 8),
                   // Şifremi Unuttum Linki
                   TextButton(
                     onPressed: () {},
@@ -217,25 +236,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 24),
-            // Giriş Yap Butonu
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 50,
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.teal),
-                          strokeWidth: 3,
-                        ),
-                      ),
-                    )
-                  : PrimaryButton(
-                      text: "Giriş Yap",
-                      onPressed: _handleLogin,
-                    ),
             ),
             const SizedBox(height: 24),
           ],
