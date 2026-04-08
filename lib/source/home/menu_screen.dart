@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../money_transfer/money_transfer_menu_screen.dart';
 
 class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
@@ -19,7 +20,12 @@ class MenuScreen extends StatelessWidget {
       MenuItemData(
         icon: Icons.compare_arrows,
         title: "Para Transferi",
-        onTap: () {},
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MoneyTransferMenuScreen()),
+          );
+        },
       ),
       MenuItemData(
         icon: Icons.credit_card,

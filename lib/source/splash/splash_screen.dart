@@ -32,7 +32,7 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const SizedBox.expand(),
+            const Spacer(),
             // Logo ve Başlık
             Column(
               children: [
@@ -72,6 +72,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 const SizedBox(height: 30),
               ],
             ),
+            const Spacer(),
           ],
         ),
       ),

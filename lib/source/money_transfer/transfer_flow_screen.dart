@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../action/accounts/account_balance_provider.dart';
 import '../../action/money_transfer/transfer_manager.dart';
 import '../components/primary_button.dart';
 
@@ -11,6 +12,7 @@ class TransferFlowScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(transferProvider);
+    final accountBalance = ref.watch(accountBalanceProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8F9),
@@ -36,25 +38,25 @@ class TransferFlowScreen extends ConsumerWidget {
             TextButton(onPressed: () {}, child: const Text("Limitler", style: TextStyle(color: Colors.teal)))
         ],
       ),
-      body: _buildBody(state, ref, context),
+      body: _buildBody(state, ref, context, accountBalance),
     );
   }
 
-  Widget _buildBody(TransferFormState state, WidgetRef ref, BuildContext context) {
+  Widget _buildBody(TransferFormState state, WidgetRef ref, BuildContext context, double accountBalance) {
     switch (state.step) {
       case TransferStep.input:
-        return _buildInputView(ref); // BURAYI DÜZELTTİK
+        return _buildInputView(ref, state, accountBalance, context);
       case TransferStep.confirm:
-        return _buildConfirmView(state, ref);
+        return _buildConfirmView(state, ref, context);
       case TransferStep.success:
         return _buildSuccessView(state, ref, context);
     }
   }
 
   // --- 1. ADIM: GELİŞMİŞ GİRİŞ EKRANI (SEKMELİ) ---
-  Widget _buildInputView(WidgetRef ref) {
+  Widget _buildInputView(WidgetRef ref, TransferFormState state, double accountBalance, BuildContext context) {
     return DefaultTabController(
-      length: 5,
+      length: 6,
       initialIndex: initialTabIndex,
       child: Column(
         children: [
@@ -73,46 +75,59 @@ class TransferFlowScreen extends ConsumerWidget {
                 Tab(text: "Telefon No"),
                 Tab(text: "TR Karekod"),
                 Tab(text: "Diğer"),
+                Tab(text: "Hesaplarım"),
               ],
             ),
           ),
           
           // Gönderen Hesap Bilgisi (Resimdeki kart)
-          _buildSenderInfo(),
+          _buildSenderInfo(accountBalance),
 
           // Sekme İçerikleri
           Expanded(
             child: TabBarView(
               children: [
-                _buildIbanTab(ref),
-                _buildAccountTab(ref),
-                _buildPhoneTab(ref), // İSTEDİĞİN TELEFON KISMI BURADA
+                _buildIbanTab(ref, accountBalance),
+                _buildAccountTab(ref, accountBalance),
+                _buildPhoneTab(ref, accountBalance),
                 _buildQrTab(),
                 _buildOtherTab(),
+                _buildInterAccountTab(ref, accountBalance),
               ],
             ),
           ),
 
           // Alt Buton Alanı
-          _buildBottomArea(ref),
+          _buildBottomArea(ref, state, accountBalance, context),
         ],
       ),
     );
   }
 
   // --- TELEFON NO SEKMESİ ---
-  Widget _buildPhoneTab(WidgetRef ref) {
+  Widget _buildPhoneTab(WidgetRef ref, double accountBalance) {
     final state = ref.watch(transferProvider);
     
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
-        _customInput(label: "Telefon No", hint: "(5xx) xxx xx xx", icon: Icons.contact_page_outlined),
+        _customInput(
+          label: "Telefon No",
+          hint: "(5xx) xxx xx xx",
+          icon: Icons.contact_page_outlined,
+          onChanged: (value) => ref.read(transferProvider.notifier).setRecipientInfo(value),
+          initialValue: state.recipientInfo,
+        ),
         _buildDatePickerField(label: "İşlem Tarihi"),
-        _buildBalanceSwitchRow(ref, state),
+        _buildBalanceSwitchRow(ref, state, accountBalance),
         _buildTutarInput(ref, state),
         _customInput(label: "Ödeme Türü Seçimi", hint: "Bireysel Ödeme", icon: Icons.chevron_right),
-        _customInput(label: "Açıklama", hint: "İsteğe Bağlı"),
+        _customInput(
+          label: "Açıklama",
+          hint: "İsteğe Bağlı",
+          onChanged: (value) => ref.read(transferProvider.notifier).setDescription(value),
+          initialValue: state.description,
+        ),
         _buildSwitchRow("Kayıtlı işlemlere ekle"),
       ],
     );
@@ -120,7 +135,7 @@ class TransferFlowScreen extends ConsumerWidget {
 
   // --- YARDIMCI WIDGETLAR (TASARIM İÇİN) ---
 
-  Widget _buildSenderInfo() {
+  Widget _buildSenderInfo(double accountBalance) {
     return Container(
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.all(16),
@@ -135,10 +150,10 @@ class TransferFlowScreen extends ConsumerWidget {
           const Spacer(),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
-            children: const [
-              Text("98750438-1", style: TextStyle(fontWeight: FontWeight.bold)),
-              Text("Cari Hesap >", style: TextStyle(color: Colors.grey, fontSize: 12)),
-              Text("427,63 TL", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+            children: [
+              const Text("98750438-1", style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text("Cari Hesap >", style: TextStyle(color: Colors.grey, fontSize: 12)),
+              Text("${_formatAmount(accountBalance)} TL", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
             ],
           )
         ],
@@ -146,7 +161,7 @@ class TransferFlowScreen extends ConsumerWidget {
     );
   }
 
-  Widget _customInput({required String label, required String hint, IconData? icon, String? suffix}) {
+  Widget _customInput({required String label, required String hint, IconData? icon, String? suffix, ValueChanged<String>? onChanged, String? initialValue}) {
     return Container(
       decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey.shade100))),
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -157,6 +172,7 @@ class TransferFlowScreen extends ConsumerWidget {
             flex: 3,
             child: TextField(
               textAlign: TextAlign.right,
+              onChanged: onChanged,
               decoration: InputDecoration(
                 hintText: hint,
                 hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
@@ -182,7 +198,7 @@ class TransferFlowScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBalanceSwitchRow(WidgetRef ref, TransferFormState state) {
+  Widget _buildBalanceSwitchRow(WidgetRef ref, TransferFormState state, double accountBalance) {
     return Container(
       decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey.shade100))),
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -193,7 +209,7 @@ class TransferFlowScreen extends ConsumerWidget {
           Switch(
             value: state.useFullBalance,
             onChanged: (v) {
-              ref.read(transferProvider.notifier).toggleUseFullBalance(427.63);
+              ref.read(transferProvider.notifier).toggleUseFullBalance(accountBalance);
             },
             activeColor: Colors.green,
           ),
@@ -202,37 +218,7 @@ class TransferFlowScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSwitchRowWithCallback(WidgetRef ref, String label, VoidCallback onToggle) {
-    return StatefulBuilder(
-      builder: (context, setState) {
-        bool isSwitched = false;
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label, style: const TextStyle(color: Colors.black54, fontSize: 13)),
-            Switch(
-              value: isSwitched,
-              onChanged: (v) {
-                setState(() {
-                  isSwitched = v;
-                });
-                if (v) {
-                  onToggle();
-                }
-              },
-              activeColor: Colors.teal,
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Widget _buildTutarInput(WidgetRef ref, TransferFormState state) {
-    final TextEditingController controller = TextEditingController(
-      text: state.amount > 0 ? state.amount.toStringAsFixed(2) : "",
-    );
-
     return Container(
       decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey.shade100))),
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -244,20 +230,21 @@ class TransferFlowScreen extends ConsumerWidget {
           ),
           Expanded(
             flex: 3,
-            child: TextField(
-              controller: controller,
+            child: TextFormField(
+              key: ValueKey('amount_input_${state.useFullBalance}'),
+              initialValue: state.amount > 0 ? _formatAmountForInput(state.amount) : "",
               textAlign: TextAlign.right,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               onChanged: (value) {
-                final amount = double.tryParse(value) ?? 0.0;
+                final amount = double.tryParse(value.replaceAll(',', '.')) ?? 0.0;
                 ref.read(transferProvider.notifier).setAmount(amount);
               },
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: "Giriniz",
-                hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                hintStyle: TextStyle(color: Colors.grey, fontSize: 13),
                 border: InputBorder.none,
                 suffixText: "TL",
-                suffixStyle: const TextStyle(color: Colors.black),
+                suffixStyle: TextStyle(color: Colors.black),
               ),
             ),
           ),
@@ -306,7 +293,7 @@ class TransferFlowScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBottomArea(WidgetRef ref) {
+  Widget _buildBottomArea(WidgetRef ref, TransferFormState state, double accountBalance, BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       color: Colors.white,
@@ -315,11 +302,25 @@ class TransferFlowScreen extends ConsumerWidget {
           const Text("fast", style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold, fontSize: 20, fontStyle: FontStyle.italic)),
           const SizedBox(height: 8),
           PrimaryButton(
-            text: "İleri", 
+            text: "İleri",
             onPressed: () {
-              // Burada şimdilik dummy verilerle onay ekranına geçiyoruz
-              ref.read(transferProvider.notifier).nextToConfirm("532 XXX XX XX", "Zeynep Büşra", 100.0);
-            }
+              if (state.amount <= 0) {
+                return;
+              }
+
+              if (state.amount > accountBalance) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Yetersiz bakiye")),
+                );
+                return;
+              }
+
+              ref.read(transferProvider.notifier).nextToConfirm(
+                state.recipientInfo,
+                state.recipientName,
+                state.amount,
+              );
+            },
           ),
         ],
       ),
@@ -327,7 +328,7 @@ class TransferFlowScreen extends ConsumerWidget {
   }
 
   // Diğer boş sekmeler için taslaklar
-  Widget _buildIbanTab(WidgetRef ref) {
+  Widget _buildIbanTab(WidgetRef ref, double accountBalance) {
     final state = ref.watch(transferProvider);
     
     return ListView(
@@ -346,18 +347,34 @@ class TransferFlowScreen extends ConsumerWidget {
             style: TextStyle(color: Color(0xFFB8860B), fontSize: 13, fontWeight: FontWeight.w500),
           ),
         ),
-        _customInput(label: "IBAN", hint: "Giriniz", icon: Icons.camera_alt),
-        _customInput(label: "Alıcı Adı Soyadı", hint: "Giriniz"),
+        _customInput(
+          label: "IBAN",
+          hint: "Giriniz",
+          icon: Icons.camera_alt,
+          onChanged: (value) => ref.read(transferProvider.notifier).setRecipientInfo(value),
+          initialValue: state.recipientInfo,
+        ),
+        _customInput(
+          label: "Alıcı Adı Soyadı",
+          hint: "Giriniz",
+          onChanged: (value) => ref.read(transferProvider.notifier).setRecipientName(value),
+          initialValue: state.recipientName,
+        ),
         _buildDatePickerField(label: "İşlem Tarihi"),
-        _buildBalanceSwitchRow(ref, state),
+        _buildBalanceSwitchRow(ref, state, accountBalance),
         _buildTutarInput(ref, state),
         _customInput(label: "Ödeme Türü Seçimi", hint: "Bireysel Ödeme", icon: Icons.chevron_right),
-        _customInput(label: "Açıklama", hint: "İsteğe Bağlı"),
+        _customInput(
+          label: "Açıklama",
+          hint: "İsteğe Bağlı",
+          onChanged: (value) => ref.read(transferProvider.notifier).setDescription(value),
+          initialValue: state.description,
+        ),
         _buildSwitchRow("Kayıtlı işlemlere ekle"),
       ],
     );
   }
-  Widget _buildAccountTab(WidgetRef ref) {
+  Widget _buildAccountTab(WidgetRef ref, double accountBalance) {
     final state = ref.watch(transferProvider);
     
     return ListView(
@@ -376,13 +393,28 @@ class TransferFlowScreen extends ConsumerWidget {
             style: TextStyle(color: Color(0xFFB8860B), fontSize: 13, fontWeight: FontWeight.w500),
           ),
         ),
-        _customInput(label: "Hesap No", hint: "Giriniz"),
-        _customInput(label: "Alıcı Adı Soyadı", hint: "Giriniz"),
+        _customInput(
+          label: "Hesap No",
+          hint: "Giriniz",
+          onChanged: (value) => ref.read(transferProvider.notifier).setRecipientInfo(value),
+          initialValue: state.recipientInfo,
+        ),
+        _customInput(
+          label: "Alıcı Adı Soyadı",
+          hint: "Giriniz",
+          onChanged: (value) => ref.read(transferProvider.notifier).setRecipientName(value),
+          initialValue: state.recipientName,
+        ),
         _buildDatePickerField(label: "İşlem Tarihi"),
-        _buildBalanceSwitchRow(ref, state),
+        _buildBalanceSwitchRow(ref, state, accountBalance),
         _buildTutarInput(ref, state),
         _customInput(label: "Ödeme Türü Seçimi", hint: "Bireysel Ödeme", icon: Icons.chevron_right),
-        _customInput(label: "Açıklama", hint: "İsteğe Bağlı"),
+        _customInput(
+          label: "Açıklama",
+          hint: "İsteğe Bağlı",
+          onChanged: (value) => ref.read(transferProvider.notifier).setDescription(value),
+          initialValue: state.description,
+        ),
         _buildSwitchRow("Kayıtlı işlemlere ekle"),
       ],
     );
@@ -390,8 +422,122 @@ class TransferFlowScreen extends ConsumerWidget {
   Widget _buildQrTab() => const Center(child: Text("QR Kod Okuyucu"));
   Widget _buildOtherTab() => const Center(child: Text("Diğer İşlemler"));
 
+  // --- HESAPLARIM ARASI TRANSFER ---
+  Widget _buildInterAccountTab(WidgetRef ref, double accountBalance) {
+    final state = ref.watch(transferProvider);
+    final senderAccount = "98750438-1";
+    final recipientAccount = "98750438-4000";
+    final recipientBalance = 1500.0;
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      children: [
+        const SizedBox(height: 16),
+        // Gönderen Hesap
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.teal.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Gönderen Hesap", style: TextStyle(color: Colors.grey, fontSize: 12)),
+              const SizedBox(height: 4),
+              Text(senderAccount, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const Text("Cari Hesap", style: TextStyle(color: Colors.grey, fontSize: 12)),
+              Text(
+                "${_formatAmount(accountBalance)} TL",
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Center(
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.teal.shade100,
+            ),
+            child: const Icon(Icons.arrow_downward, color: Colors.teal),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Alıcı Hesap
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.orange.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Alıcı Hesap", style: TextStyle(color: Colors.grey, fontSize: 12)),
+              const SizedBox(height: 4),
+              Text(recipientAccount, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const Text("Yatırım Hesabı", style: TextStyle(color: Colors.grey, fontSize: 12)),
+              Text(
+                "${_formatAmount(recipientBalance)} TL",
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildBalanceSwitchRow(ref, state, accountBalance),
+        const SizedBox(height: 8),
+        // Tutar Input
+        Container(
+          decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey.shade100))),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              const Expanded(
+                flex: 2,
+                child: Text("Tutar", style: TextStyle(color: Colors.black54, fontSize: 13)),
+              ),
+              Expanded(
+                flex: 3,
+                child: TextFormField(
+                  key: ValueKey('inter_account_amount_${state.useFullBalance}'),
+                  initialValue: state.amount > 0 ? _formatAmountForInput(state.amount) : "",
+                  textAlign: TextAlign.right,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: (value) {
+                    final amount = double.tryParse(value.replaceAll(',', '.')) ?? 0.0;
+                    ref.read(transferProvider.notifier).setAmount(amount);
+                  },
+                  decoration: const InputDecoration(
+                    hintText: "Giriniz",
+                    hintStyle: TextStyle(color: Colors.grey, fontSize: 13),
+                    border: InputBorder.none,
+                    suffixText: "TL",
+                    suffixStyle: TextStyle(color: Colors.black),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Açıklama
+        _customInput(
+          label: "Açıklama",
+          hint: "İsteğe Bağlı",
+          onChanged: (value) => ref.read(transferProvider.notifier).setDescription(value),
+          initialValue: state.description,
+        ),
+      ],
+    );
+  }
+
   // --- ONAY VE BAŞARI EKRANLARI (SENİN KODUNDAKİLERLE AYNI) ---
-  Widget _buildConfirmView(TransferFormState state, WidgetRef ref) {
+  Widget _buildConfirmView(TransferFormState state, WidgetRef ref, BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -415,7 +561,17 @@ class TransferFlowScreen extends ConsumerWidget {
           const Spacer(),
           PrimaryButton(
             text: "Onayla ve Gönder",
-            onPressed: () => ref.read(transferProvider.notifier).complete(),
+            onPressed: () {
+              if (!ref.read(accountBalanceProvider.notifier).canTransfer(state.amount)) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Yetersiz bakiye")),
+                );
+                return;
+              }
+
+              ref.read(accountBalanceProvider.notifier).deduct(state.amount);
+              ref.read(transferProvider.notifier).complete();
+            },
           ),
         ],
       ),
@@ -458,5 +614,13 @@ class TransferFlowScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  String _formatAmount(double amount) {
+    return amount.toStringAsFixed(2).replaceAll('.', ',');
+  }
+
+  String _formatAmountForInput(double amount) {
+    return amount.toStringAsFixed(2);
   }
 }

@@ -9,6 +9,7 @@ class TransferFormState {
   final String recipientInfo;
   final String recipientName;
   final double amount;
+  final String description;
   final bool useFullBalance; // Bakiyenin tümünü kullan toggle
 
   TransferFormState({
@@ -17,6 +18,7 @@ class TransferFormState {
     this.recipientInfo = "",
     this.recipientName = "",
     this.amount = 0.0,
+    this.description = "",
     this.useFullBalance = false,
   });
 
@@ -26,6 +28,7 @@ class TransferFormState {
     String? recipientInfo,
     String? recipientName,
     double? amount,
+    String? description,
     bool? useFullBalance,
   }) {
     return TransferFormState(
@@ -34,6 +37,7 @@ class TransferFormState {
       recipientInfo: recipientInfo ?? this.recipientInfo,
       recipientName: recipientName ?? this.recipientName,
       amount: amount ?? this.amount,
+      description: description ?? this.description,
       useFullBalance: useFullBalance ?? this.useFullBalance,
     );
   }
@@ -54,6 +58,18 @@ class TransferNotifier extends Notifier<TransferFormState> {
 
   void setAmount(double amount) {
     state = state.copyWith(amount: amount);
+  }
+
+  void setDescription(String description) {
+    state = state.copyWith(description: description);
+  }
+
+  void setRecipientInfo(String info) {
+    state = state.copyWith(recipientInfo: info);
+  }
+
+  void setRecipientName(String name) {
+    state = state.copyWith(recipientName: name);
   }
 
   void toggleUseFullBalance(double balance) {

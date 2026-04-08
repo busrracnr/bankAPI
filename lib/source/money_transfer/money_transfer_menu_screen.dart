@@ -11,10 +11,6 @@ class MoneyTransferMenuScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         title: const Text("Para Transferi", style: TextStyle(fontSize: 16, color: Colors.black, fontWeight: FontWeight.bold)),
-        leading: IconButton(
-          icon: const Icon(Icons.chevron_left, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
       ),
       backgroundColor: const Color(0xFFF2F4F7),
       body: ListView(
@@ -41,7 +37,12 @@ class MoneyTransferMenuScreen extends StatelessWidget {
             icon: Icons.location_on,
             title: "Hesaplarım Arası",
             onTap: () {
-              // Hesaplarım arası transfere git
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const TransferFlowScreen(initialTabIndex: 5),
+                ),
+              );
             },
           ),
           _buildMenuItem(
