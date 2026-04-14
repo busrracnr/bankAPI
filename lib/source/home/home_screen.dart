@@ -6,6 +6,8 @@ import '../money_transfer/transfer_flow_screen.dart';
 import '../money_transfer/money_transfer_menu_screen.dart';
 import 'menu_screen.dart';
 import '../accounts/accounts_screen.dart';
+import '../investment/investment_menu_screen.dart';
+import 'search_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -16,20 +18,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedIndex = 0;
-  late PageController _pageController;
+  int _previousIndex = 0;
   bool _isBalanceVisible = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(initialPage: 0);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,22 +28,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F4F7),
       bottomNavigationBar: _buildBottomBar(),
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 320),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (child, animation) {
+          final isIncoming = child.key == ValueKey(_selectedIndex);
+          final direction = _selectedIndex > _previousIndex ? 1.0 : -1.0;
+          final beginOffset = isIncoming
+              ? Offset(direction, 0)
+              : Offset(-direction, 0);
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: beginOffset,
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          );
         },
-        children: [
-          _buildHomeContent(accountBalance),
-          _buildDovizYatirimContent(),
-          _buildDurumContent(),
-          _buildParaTransferiContent(),
-          _buildMenuContent(),
-        ],
+        child: KeyedSubtree(
+          key: ValueKey(_selectedIndex),
+          child: _currentPage(accountBalance),
+        ),
       ),
     );
+  }
+
+  Widget _currentPage(double accountBalance) {
+    switch (_selectedIndex) {
+      case 0: return _buildHomeContent(accountBalance);
+      case 1: return _buildDovizYatirimContent();
+      case 2: return _buildDurumContent();
+      case 3: return _buildParaTransferiContent();
+      case 4: return _buildMenuContent();
+      default: return _buildHomeContent(accountBalance);
+    }
   }
 
   Widget _buildHomeContent(double accountBalance) {
@@ -76,7 +85,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             style: TextStyle(fontSize: 16, color: Colors.black87),
           ),
           actions: [
-            IconButton(icon: const Icon(Icons.search, color: Colors.teal), onPressed: () {}),
+            IconButton(
+              icon: const Icon(Icons.search, color: Colors.teal),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SearchScreen()),
+                );
+              },
+            ),
             IconButton(icon: const Icon(Icons.notifications_none, color: Colors.teal), onPressed: () {}),
           ],
         ),
@@ -113,19 +130,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildDovizYatirimContent() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.trending_up, size: 80, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
-          Text(
-            "Döviz/Yatırım",
-            style: TextStyle(fontSize: 18, color: Colors.grey.shade600, fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
-    );
+    return const InvestmentMenuScreen();
   }
 
   Widget _buildDurumContent() {
@@ -249,11 +254,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       unselectedItemColor: Colors.grey,
       currentIndex: _selectedIndex,
       onTap: (index) {
-        _pageController.animateToPage(
-          index,
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOutCubic,
-        );
+        setState(() {
+          _previousIndex = _selectedIndex;
+          _selectedIndex = index;
+        });
       },
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: "Ana Sayfa"),

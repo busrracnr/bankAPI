@@ -26,7 +26,7 @@ class MoneyTransferMenuScreen extends StatelessWidget {
           ),
           _buildMenuItem(
             context,
-            icon: Icons.swap_vert,
+            icon: Icons.import_export,
             title: "Kayıtlı Para Transferleri",
             onTap: () {
               // Kayıtlı transferlere git
@@ -34,7 +34,7 @@ class MoneyTransferMenuScreen extends StatelessWidget {
           ),
           _buildMenuItem(
             context,
-            icon: Icons.location_on,
+            icon: Icons.compare_arrows,
             title: "Hesaplarım Arası",
             onTap: () {
               Navigator.push(
@@ -47,7 +47,7 @@ class MoneyTransferMenuScreen extends StatelessWidget {
           ),
           _buildMenuItem(
             context,
-            icon: Icons.swap_horiz,
+            icon: Icons.reply,
             title: "Başka Hesaba (Havale / EFT / F...",
             onTap: () {
               Navigator.push(
@@ -68,7 +68,7 @@ class MoneyTransferMenuScreen extends StatelessWidget {
           ),
           _buildMenuItem(
             context,
-            icon: Icons.payment,
+            icon: Icons.credit_card,
             title: "Karta",
             onTap: () {
               // Karta transfere git
@@ -76,7 +76,7 @@ class MoneyTransferMenuScreen extends StatelessWidget {
           ),
           _buildMenuItem(
             context,
-            icon: Icons.atm,
+            icon: Icons.smartphone,
             title: "Cebe Gönder ATM'den Çek",
             onTap: () {
               // ATM transferine git
@@ -84,7 +84,7 @@ class MoneyTransferMenuScreen extends StatelessWidget {
           ),
           _buildMenuItem(
             context,
-            icon: Icons.currency_exchange,
+            icon: Icons.language,
             title: "Döviz Transferi",
             onTap: () {
               // Döviz transferine git
@@ -92,7 +92,7 @@ class MoneyTransferMenuScreen extends StatelessWidget {
           ),
           _buildMenuItem(
             context,
-            icon: Icons.send,
+            icon: Icons.tune,
             title: "Transfer Limitleri",
             onTap: () {
               // Transfer limitlerini göster
@@ -100,7 +100,7 @@ class MoneyTransferMenuScreen extends StatelessWidget {
           ),
           _buildMenuItem(
             context,
-            icon: Icons.description,
+            icon: Icons.date_range,
             title: "Talimatlarım",
             onTap: () {
               // Talimatları göster
@@ -108,7 +108,7 @@ class MoneyTransferMenuScreen extends StatelessWidget {
           ),
           _buildMenuItem(
             context,
-            icon: Icons.shield,
+            icon: Icons.security,
             title: "Güvenli Ödeme İşlemleri",
             onTap: () {
               // Güvenli ödeme işlemlerine git
@@ -116,8 +116,8 @@ class MoneyTransferMenuScreen extends StatelessWidget {
           ),
           _buildMenuItem(
             context,
-            icon: Icons.lock,
-            title: "Ödeme İşte",
+            icon: Icons.currency_lira,
+            title: "Ödeme İste",
             onTap: () {
               // Ödeme işte sayfasına git
             },
