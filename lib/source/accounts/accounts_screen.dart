@@ -134,7 +134,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> with TickerProv
               },
               tabs: const [
                 Tab(text: "Cari Hesaplarım"),
-                Tab(text: "Katılma Hesaplarım"),
+                Tab(text: "Katılım Hesaplarım"),
                 Tab(text: "Başka Banka"),
               ],
             ),
@@ -219,7 +219,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> with TickerProv
             Icon(Icons.folder_open_outlined, size: 64, color: Colors.grey.shade300),
             const SizedBox(height: 16),
             Text(
-              "Katılma hesabınız bulunmamaktadır.",
+              "Katılım hesabınız bulunmamaktadır.",
               style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
             ),
           ],
@@ -234,7 +234,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> with TickerProv
             Icon(Icons.folder_open_outlined, size: 64, color: Colors.grey.shade300),
             const SizedBox(height: 16),
             Text(
-              "Henüz tanımlanmış başka banka hesabınız\nkullanmamaktadır.",
+              "Henüz tanımlanmış başka banka hesabınız\nbulunmamaktadır.",
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
             ),

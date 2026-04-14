@@ -96,7 +96,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           onPressed: () {},
         ),
         title: const Text(
-          "KuveytTÜRK",
+          "bankAPI",
           style: TextStyle(color: Colors.teal, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
         ),
         centerTitle: true,

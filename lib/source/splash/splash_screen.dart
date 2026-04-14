@@ -52,7 +52,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 ),
                 const SizedBox(height: 30),
                 const Text(
-                  "Kuveit Türk Mobil",
+                  "bankAPI",
                   style: TextStyle(
                     color: Colors.teal,
                     fontSize: 28,
