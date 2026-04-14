@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'alis_satis_screen.dart';
+import 'doviz_portfoy_screen.dart';
 
 class DovizKiymetliMadenlerScreen extends StatelessWidget {
   const DovizKiymetliMadenlerScreen({super.key});
@@ -21,17 +23,17 @@ class DovizKiymetliMadenlerScreen extends StatelessWidget {
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
             child: Column(
               children: [
-                _item("Portföyüm"),
+                _item(context, "Portföyüm", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DovizPortfoyScreen()))),
                 _divider(),
-                _item("Al / Sat"),
+                _item(context, "Al / Sat", onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AlisSatisScreen()))),
                 _divider(),
-                _item("Emirlerim"),
+                _item(context, "Emirlerim"),
                 _divider(),
-                _item("İşlem Geçmişi"),
+                _item(context, "İşlem Geçmişi"),
                 _divider(),
-                _item("Kur Referansı İşlemleri"),
+                _item(context, "Kur Referansı İşlemleri"),
                 _divider(),
-                _item("İşlem Limitlerini Güncelle"),
+                _item(context, "İşlem Limitlerini Güncelle"),
               ],
             ),
           ),
@@ -40,11 +42,11 @@ class DovizKiymetliMadenlerScreen extends StatelessWidget {
     );
   }
 
-  Widget _item(String title) {
+  Widget _item(BuildContext context, String title, {VoidCallback? onTap}) {
     return ListTile(
       title: Text(title, style: const TextStyle(fontSize: 14, color: Colors.black87)),
       trailing: const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
-      onTap: () {},
+      onTap: onTap ?? () {},
     );
   }
 
