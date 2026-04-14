@@ -1,6 +1,6 @@
 {
-    "name": "kuveit",
-    "short_name": "kuveit",
+    "name": "bankAPI",
+    "short_name": "bankAPI",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

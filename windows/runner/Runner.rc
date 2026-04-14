@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "kuveit" "\0"
+            VALUE "FileDescription", "bankAPI" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "kuveit" "\0"
+            VALUE "InternalName", "bankAPI" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "kuveit.exe" "\0"
-            VALUE "ProductName", "kuveit" "\0"
+            VALUE "OriginalFilename", "bankAPI.exe" "\0"
+            VALUE "ProductName", "bankAPI" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
