@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../action/accounts/account_balance_provider.dart';
+import '../../action/money_transfer/account_provider.dart';
+import '../../action/user/user_manager.dart';
 import 'widgets/account_card.dart';
 import '../money_transfer/transfer_flow_screen.dart';
 import '../money_transfer/money_transfer_menu_screen.dart';
@@ -23,7 +24,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final accountBalance = ref.watch(accountBalanceProvider);
+    final accountsAsync = ref.watch(accountsProvider);
+    final firstAccount = accountsAsync.value?.isNotEmpty == true
+        ? accountsAsync.value!.first as Map<String, dynamic>
+        : null;
+    final accountBalance = double.tryParse(firstAccount?['balance']?.toString() ?? '0') ?? 0.0;
+    final accountIban = firstAccount?['iban'] as String? ?? '-';
+    final accountNo = accountIban.length > 8 ? accountIban.substring(accountIban.length - 8) : accountIban;
+    final userName = ref.watch(userProvider)?.name ?? 'Kullanıcı';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F4F7),
@@ -48,24 +56,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         },
         child: KeyedSubtree(
           key: ValueKey(_selectedIndex),
-          child: _currentPage(accountBalance),
+          child: _currentPage(accountBalance, accountNo, accountIban, 'Merhaba, $userName'),
         ),
       ),
     );
   }
 
-  Widget _currentPage(double accountBalance) {
+  Widget _currentPage(double accountBalance, String accountNo, String accountIban, String userName) {
     switch (_selectedIndex) {
-      case 0: return _buildHomeContent(accountBalance);
+      case 0: return _buildHomeContent(accountBalance, accountNo, accountIban, userName);
       case 1: return _buildDovizYatirimContent();
       case 2: return _buildDurumContent();
       case 3: return _buildParaTransferiContent();
       case 4: return _buildMenuContent();
-      default: return _buildHomeContent(accountBalance);
+      default: return _buildHomeContent(accountBalance, accountNo, accountIban, userName);
     }
   }
 
-  Widget _buildHomeContent(double accountBalance) {
+  Widget _buildHomeContent(double accountBalance, String accountNo, String accountIban, String userName) {
     return CustomScrollView(
       slivers: [
         SliverAppBar(
@@ -80,9 +88,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: Icon(Icons.account_circle, color: Colors.teal, size: 28),
             ),
           ),
-          title: const Text(
-            "Zeynep Büşra Çınar",
-            style: TextStyle(fontSize: 16, color: Colors.black87),
+          title: Text(
+            userName,
+            style: const TextStyle(fontSize: 16, color: Colors.black87),
           ),
           actions: [
             IconButton(
@@ -103,7 +111,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               _buildTabs(),
               AccountBalanceCard(
-                accountNo: "98750438 - 1",
+                accountNo: accountNo,
+                iban: accountIban,
                 balance: accountBalance,
                 isBalanceVisible: _isBalanceVisible,
                 onBalanceToggle: () {

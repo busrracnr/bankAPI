@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../action/accounts/account_filter_manager.dart';
+import '../../action/money_transfer/account_provider.dart';
 import 'filter_accounts_screen.dart';
 
 class AccountsScreen extends ConsumerStatefulWidget {
@@ -14,40 +15,6 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> with TickerProv
   int _selectedTab = 0;
   late TabController _tabController;
 
-  // Örnek hesap verileri
-  final List<Map<String, dynamic>> myAccounts = [
-    {
-      "number": "98750438-1",
-      "balance": "87,23 TL",
-      "type": "Cari Hesap",
-      "icon": Icons.account_balance_wallet,
-    },
-    {
-      "number": "98750438-4000",
-      "balance": "2,00 TL",
-      "type": "Yatırım Hesabı",
-      "icon": Icons.trending_up,
-    },
-    {
-      "number": "98750438-101",
-      "balance": "0.02 ALT (gr)",
-      "type": "Cari Hesap",
-      "icon": Icons.account_balance_wallet,
-    },
-    {
-      "number": "98750438-102",
-      "balance": "0,00 EUR",
-      "type": "Cari Hesap",
-      "icon": Icons.account_balance_wallet,
-    },
-    {
-      "number": "98750438-4001",
-      "balance": "0,00 ALT (gr)",
-      "type": "Yatırım Hesabı",
-      "icon": Icons.trending_up,
-    },
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -60,40 +27,34 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> with TickerProv
     super.dispose();
   }
 
-  List<Map<String, dynamic>> _getFilteredAccounts() {
+  List<Map<String, dynamic>> _applyFilters(List<dynamic> accounts) {
     final filterState = ref.read(accountFilterProvider);
-    
-    return myAccounts.where((account) {
-      // Sadece Açık Hesaplar
-      if (filterState.onlyOpenAccounts) {
-        if (account["balance"].toString().contains("0,00") || 
-            account["balance"].toString().contains("0.00")) {
-          return false;
-        }
-      }
-
-      // Sadece Kullanılabilir Bakiyeli Hesaplar
-      if (filterState.onlyAvailableBalance) {
-        if (account["balance"].toString().contains("0,00") || 
-            account["balance"].toString().contains("0.00")) {
-          return false;
-        }
-      }
-
-      // Ortak Hesaplar seçeneği
-      if (!filterState.commonAccounts) {
-        // Ortak hesapları gizle (isim içinde "ortak" varsa)
-        if (account["type"].toString().toLowerCase().contains("ortak")) {
-          return false;
-        }
-      }
-
+    return accounts.where((a) {
+      final account = a as Map<String, dynamic>;
+      final balance = double.tryParse(account['balance'].toString()) ?? 0;
+      if (filterState.onlyOpenAccounts && balance == 0) return false;
+      if (filterState.onlyAvailableBalance && balance == 0) return false;
       return true;
-    }).toList();
+    }).cast<Map<String, dynamic>>().toList();
+  }
+
+  String _formatBalance(Map<String, dynamic> account) {
+    final balance = double.tryParse(account['balance'].toString()) ?? 0.0;
+    final currency = account['currency'] as String? ?? 'TRY';
+    final formatted = balance.toStringAsFixed(2).replaceAll('.', ',');
+    final currencyLabel = currency == 'TRY' ? 'TL' : currency;
+    return '$formatted $currencyLabel';
+  }
+
+  String _accountNo(Map<String, dynamic> account) {
+    final iban = account['iban'] as String? ?? '';
+    return iban.length > 8 ? iban.substring(iban.length - 8) : iban;
   }
 
   @override
   Widget build(BuildContext context) {
+    final accountsAsync = ref.watch(accountsProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF2F4F7),
       appBar: AppBar(
@@ -118,7 +79,6 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> with TickerProv
       ),
       body: Column(
         children: [
-          // Sekme Başlıkları
           Container(
             color: Colors.white,
             child: TabBar(
@@ -127,11 +87,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> with TickerProv
               indicatorWeight: 3,
               labelColor: Colors.black,
               unselectedLabelColor: Colors.grey,
-              onTap: (index) {
-                setState(() {
-                  _selectedTab = index;
-                });
-              },
+              onTap: (index) => setState(() => _selectedTab = index),
               tabs: const [
                 Tab(text: "Cari Hesaplarım"),
                 Tab(text: "Katılım Hesaplarım"),
@@ -139,10 +95,12 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> with TickerProv
               ],
             ),
           ),
-          
-          // İçerik
           Expanded(
-            child: _buildTabContent(),
+            child: accountsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator(color: Colors.teal)),
+              error: (e, _) => Center(child: Text('Hata: $e', style: const TextStyle(color: Colors.red))),
+              data: (accounts) => _buildTabContent(accounts),
+            ),
           ),
         ],
       ),
@@ -155,15 +113,18 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> with TickerProv
     );
   }
 
-  Widget _buildTabContent() {
+  Widget _buildTabContent(List<dynamic> allAccounts) {
     if (_selectedTab == 0) {
-      // Cari hesaplarım
-      final filteredAccounts = _getFilteredAccounts();
-      
+      final filtered = _applyFilters(allAccounts);
+      final totalBalance = allAccounts
+          .map((a) => (a as Map<String, dynamic>))
+          .where((a) => a['currency'] == 'TRY')
+          .fold(0.0, (sum, a) => sum + (double.tryParse(a['balance'].toString()) ?? 0));
+
       return ListView(
         padding: const EdgeInsets.symmetric(vertical: 16),
         children: [
-          // Toplam bilgi
+          // Toplam
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             padding: const EdgeInsets.all(16),
@@ -177,10 +138,13 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> with TickerProv
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text("Toplam:", style: TextStyle(color: Colors.grey, fontSize: 12)),
-                    Text("219,90", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black)),
-                    Text("(TL Karşılığı)", style: TextStyle(color: Colors.grey, fontSize: 11)),
+                  children: [
+                    const Text("Toplam:", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    Text(
+                      totalBalance.toStringAsFixed(2).replaceAll('.', ','),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+                    ),
+                    const Text("(TL Karşılığı)", style: TextStyle(color: Colors.grey, fontSize: 11)),
                   ],
                 ),
                 const Icon(Icons.account_balance, color: Colors.teal, size: 40),
@@ -188,9 +152,7 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> with TickerProv
             ),
           ),
           const SizedBox(height: 16),
-          
-          // Hesap listesi
-          if (filteredAccounts.isEmpty)
+          if (filtered.isEmpty)
             Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 32),
@@ -198,46 +160,34 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> with TickerProv
                   children: [
                     Icon(Icons.folder_open_outlined, size: 64, color: Colors.grey.shade300),
                     const SizedBox(height: 16),
-                    Text(
-                      "Filtre kriterlerine uygun hesap bulunamadı.",
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-                    ),
+                    Text("Hesap bulunamadı.", style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
                   ],
                 ),
               ),
             )
           else
-            ...filteredAccounts.map((account) => _buildAccountCard(account)).toList(),
+            ...filtered.map((account) => _buildAccountCard(account)).toList(),
         ],
       );
     } else if (_selectedTab == 1) {
-      // Katılma hesaplarım - boş
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.folder_open_outlined, size: 64, color: Colors.grey.shade300),
             const SizedBox(height: 16),
-            Text(
-              "Katılım hesabınız bulunmamaktadır.",
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-            ),
+            Text("Katılım hesabınız bulunmamaktadır.", style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
           ],
         ),
       );
     } else {
-      // Başka banka - boş
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.folder_open_outlined, size: 64, color: Colors.grey.shade300),
             const SizedBox(height: 16),
-            Text(
-              "Henüz tanımlanmış başka banka hesabınız\nbulunmamaktadır.",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-            ),
+            Text("Henüz tanımlanmış başka banka hesabınız\nbulunmamaktadır.", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
           ],
         ),
       );
@@ -255,36 +205,16 @@ class _AccountsScreenState extends ConsumerState<AccountsScreen> with TickerProv
       ),
       child: Row(
         children: [
-          // Hesap numarası ve tip
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  account["number"],
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                Text(
-                  account["type"],
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                ),
+                Text(_accountNo(account), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(account['name'] as String? ?? '', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
               ],
             ),
           ),
-          
-          // Tutar
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                account["balance"],
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black),
-              ),
-              const SizedBox(height: 4),
-            ],
-          ),
-          
-          // Ok ikonu
+          Text(_formatBalance(account), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
           const SizedBox(width: 12),
           const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
         ],

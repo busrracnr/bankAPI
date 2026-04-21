@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../action/money_transfer/account_provider.dart';
+import '../../action/money_transfer/transfer_manager.dart';
 import '../../action/user/user_manager.dart';
+import '../../core/repositories/auth_repository.dart';
 import '../components/primary_button.dart';
 import '../home/home_screen.dart';
 
@@ -12,30 +15,50 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
+  late TextEditingController _emailController;
   late TextEditingController _passwordController;
   bool _isLoading = false;
+  String? _savedEmail;   // kayıtlı e-posta
+  String? _savedName;    // kayıtlı ad soyad
+  bool _switchingAccount = false; // "Başka hesapla gir" aktif mi
 
   @override
   void initState() {
     super.initState();
+    _emailController = TextEditingController();
     _passwordController = TextEditingController();
+    _loadSavedUser();
+  }
+
+  Future<void> _loadSavedUser() async {
+    final email = await AuthRepository.getLastUserEmail();
+    final name = await AuthRepository.getLastUserName();
+    if (mounted) {
+      setState(() {
+        _savedEmail = email;
+        _savedName = name;
+        if (email != null) {
+          _emailController.text = email;
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  void _handleLogin() {
-    final userNotifier = ref.read(userProvider.notifier);
-    final authNotifier = ref.read(isAuthenticatedProvider.notifier);
+  Future<void> _handleLogin() async {
+    final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (password.isEmpty) {
+    if (email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Lütfen şifreyi giriniz"),
+          content: Text("Lütfen e-posta ve şifrenizi giriniz"),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 2),
         ),
@@ -43,14 +66,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
-    // Şifre doğrulaması
-    if (userNotifier.authenticate(password)) {
-      authNotifier.setAuthenticated(true);
-      
+    try {
+      await ref.read(userProvider.notifier).loginWithApi(email, password);
+      // Yeni kullanıcının hesapları yüklensin, eski cache'i temizle
+      ref.invalidate(accountsProvider);
+      ref.invalidate(transferProvider);
+      ref.read(isAuthenticatedProvider.notifier).setAuthenticated(true);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -59,7 +83,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             duration: Duration(seconds: 1),
           ),
         );
-
         Future.delayed(const Duration(seconds: 1), () {
           if (mounted) {
             Navigator.pushReplacement(
@@ -69,19 +92,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           }
         });
       }
-    } else {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Şifre hatalı! Lütfen tekrar deneyiniz."),
+          SnackBar(
+            content: Text(e.toString()),
             backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
   @override
@@ -133,6 +154,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  // "Merhaba" her zaman göster
                   const Text(
                     "Merhaba",
                     style: TextStyle(
@@ -142,15 +164,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    "Zeynep Büşra Çınar",
-                    style: TextStyle(
-                      color: Colors.black87,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                  // Kayıtlı kullanıcı varsa ve başka hesap seçilmiyorsa adı göster
+                  if (_savedName != null && !_switchingAccount)
+                    Text(
+                      _savedName!,
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 16),
+                  // E-posta alanı: sadece kayıtlı kullanıcı yoksa VEYA "Başka hesapla gir" seçildiyse göster
+                  if (_savedEmail == null || _switchingAccount)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: TextField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          textAlign: TextAlign.center,
+                          decoration: const InputDecoration(
+                            hintText: "E-posta giriniz",
+                            hintStyle: TextStyle(color: Colors.grey, fontSize: 13),
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 8),
                   // Şifre Girişi
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -194,7 +242,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                   ),
                   const SizedBox(height: 8),
-                  // Şifremi Unuttum Linki
+                  // Şifremi Unuttum
                   TextButton(
                     onPressed: () {},
                     child: const Text(
@@ -206,6 +254,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                   ),
+                  // Başka hesapla gir — sadece kayıtlı kullanıcı varsa ve switch aktif değilse göster
+                  if (_savedEmail != null && !_switchingAccount)
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _switchingAccount = true;
+                          _emailController.clear();
+                          _passwordController.clear();
+                        });
+                      },
+                      child: const Text(
+                        "Başka hesapla gir >",
+                        style: TextStyle(
+                          color: Colors.teal,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

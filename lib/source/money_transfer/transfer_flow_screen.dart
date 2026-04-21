@@ -1,18 +1,95 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../action/accounts/account_balance_provider.dart';
+import '../../action/money_transfer/account_provider.dart';
 import '../../action/money_transfer/transfer_manager.dart';
+import '../../core/repositories/providers.dart';
 import '../components/primary_button.dart';
 
-class TransferFlowScreen extends ConsumerWidget {
+class TransferFlowScreen extends ConsumerStatefulWidget {
   final int initialTabIndex;
-  
+
   const TransferFlowScreen({super.key, this.initialTabIndex = 0});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TransferFlowScreen> createState() => _TransferFlowScreenState();
+}
+
+class _TransferFlowScreenState extends ConsumerState<TransferFlowScreen> with SingleTickerProviderStateMixin {
+  bool _isSending = false;
+  String? _ibanOwnerName;
+  bool _ibanLookupLoading = false;
+  String? _ibanLookupError;
+  Timer? _ibanDebounce;
+  late TabController _tabController;
+  int _activeTab = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 6, vsync: this, initialIndex: widget.initialTabIndex);
+    _activeTab = widget.initialTabIndex;
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging || _tabController.index != _activeTab) {
+        setState(() => _activeTab = _tabController.index);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _ibanDebounce?.cancel();
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _onIbanChanged(String value, WidgetRef ref) {
+    ref.read(transferProvider.notifier).setRecipientInfo(value);
+    _ibanDebounce?.cancel();
+    // TR IBAN'ı 26 karakter
+    if (value.length == 26) {
+      setState(() {
+        _ibanLookupLoading = true;
+        _ibanOwnerName = null;
+        _ibanLookupError = null;
+      });
+      _ibanDebounce = Timer(const Duration(milliseconds: 400), () async {
+        final repo = ref.read(transferRepositoryProvider);
+        final name = await repo.lookupIban(value);
+        if (!mounted) return;
+        setState(() {
+          _ibanLookupLoading = false;
+          if (name != null) {
+            _ibanOwnerName = name;
+            _ibanLookupError = null;
+          } else {
+            _ibanOwnerName = null;
+            _ibanLookupError = 'Bu IBAN bulunamadı';
+          }
+        });
+      });
+    } else {
+      setState(() {
+        _ibanOwnerName = null;
+        _ibanLookupError = null;
+        _ibanLookupLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(transferProvider);
-    final accountBalance = ref.watch(accountBalanceProvider);
+    final accountsAsync = ref.watch(accountsProvider);
+    final senderAccount = accountsAsync.asData?.value.firstOrNull as Map<String, dynamic>?;
+    final accountBalance = double.tryParse(senderAccount?['balance']?.toString() ?? '0') ?? 0.0;
+
+    // Sender account ID'yi state'e kaydet
+    if (senderAccount != null && state.senderAccountId.isEmpty) {
+      Future.microtask(() {
+        ref.read(transferProvider.notifier).setSenderAccountId(senderAccount['id'] as String);
+      });
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8F9),
@@ -38,14 +115,14 @@ class TransferFlowScreen extends ConsumerWidget {
             TextButton(onPressed: () {}, child: const Text("Limitler", style: TextStyle(color: Colors.teal)))
         ],
       ),
-      body: _buildBody(state, ref, context, accountBalance),
+      body: _buildBody(state, ref, context, accountBalance, senderAccount),
     );
   }
 
-  Widget _buildBody(TransferFormState state, WidgetRef ref, BuildContext context, double accountBalance) {
+  Widget _buildBody(TransferFormState state, WidgetRef ref, BuildContext context, double accountBalance, Map<String, dynamic>? senderAccount) {
     switch (state.step) {
       case TransferStep.input:
-        return _buildInputView(ref, state, accountBalance, context);
+        return _buildInputView(ref, state, accountBalance, context, senderAccount);
       case TransferStep.confirm:
         return _buildConfirmView(state, ref, context);
       case TransferStep.success:
@@ -54,22 +131,20 @@ class TransferFlowScreen extends ConsumerWidget {
   }
 
   // --- 1. ADIM: GELİŞMİŞ GİRİŞ EKRANI (SEKMELİ) ---
-  Widget _buildInputView(WidgetRef ref, TransferFormState state, double accountBalance, BuildContext context) {
-    return DefaultTabController(
-      length: 6,
-      initialIndex: initialTabIndex,
-      child: Column(
+  Widget _buildInputView(WidgetRef ref, TransferFormState state, double accountBalance, BuildContext context, Map<String, dynamic>? senderAccount) {
+    return Column(
         children: [
           // Sekme Başlıkları
           Container(
             color: Colors.white,
-            child: const TabBar(
+            child: TabBar(
+              controller: _tabController,
               isScrollable: true,
               labelColor: Colors.black,
               unselectedLabelColor: Colors.grey,
               indicatorColor: Colors.teal,
               indicatorWeight: 3,
-              tabs: [
+              tabs: const [
                 Tab(text: "IBAN"),
                 Tab(text: "Hesap"),
                 Tab(text: "Telefon No"),
@@ -81,11 +156,12 @@ class TransferFlowScreen extends ConsumerWidget {
           ),
           
           // Gönderen Hesap Bilgisi (Resimdeki kart)
-          _buildSenderInfo(accountBalance),
+          _buildSenderInfo(accountBalance, senderAccount),
 
           // Sekme İçerikleri
           Expanded(
             child: TabBarView(
+              controller: _tabController,
               children: [
                 _buildIbanTab(ref, accountBalance),
                 _buildAccountTab(ref, accountBalance),
@@ -97,11 +173,11 @@ class TransferFlowScreen extends ConsumerWidget {
             ),
           ),
 
-          // Alt Buton Alanı
-          _buildBottomArea(ref, state, accountBalance, context),
+          // Alt Buton Alanı — Hesaplarım sekmesinde gösterme (kendi butonu var)
+          if (_activeTab != 5)
+            _buildBottomArea(ref, state, accountBalance, context),
         ],
-      ),
-    );
+      );
   }
 
   // --- TELEFON NO SEKMESİ ---
@@ -135,7 +211,10 @@ class TransferFlowScreen extends ConsumerWidget {
 
   // --- YARDIMCI WIDGETLAR (TASARIM İÇİN) ---
 
-  Widget _buildSenderInfo(double accountBalance) {
+  Widget _buildSenderInfo(double accountBalance, Map<String, dynamic>? senderAccount) {
+    final iban = senderAccount?['iban'] as String? ?? '';
+    final shortIban = iban.length > 8 ? iban.substring(iban.length - 8) : iban;
+    final name = senderAccount?['name'] as String? ?? 'Cari Hesap';
     return Container(
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.all(16),
@@ -151,8 +230,8 @@ class TransferFlowScreen extends ConsumerWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Text("98750438-1", style: TextStyle(fontWeight: FontWeight.bold)),
-              const Text("Cari Hesap >", style: TextStyle(color: Colors.grey, fontSize: 12)),
+              Text(shortIban, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text("$name >", style: const TextStyle(color: Colors.grey, fontSize: 12)),
               Text("${_formatAmount(accountBalance)} TL", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
             ],
           )
@@ -351,12 +430,45 @@ class TransferFlowScreen extends ConsumerWidget {
           label: "IBAN",
           hint: "Giriniz",
           icon: Icons.camera_alt,
-          onChanged: (value) => ref.read(transferProvider.notifier).setRecipientInfo(value),
+          onChanged: (value) => _onIbanChanged(value, ref),
           initialValue: state.recipientInfo,
         ),
+        if (_ibanLookupLoading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.teal)),
+                SizedBox(width: 8),
+                Text("IBAN sorgulanıyor...", style: TextStyle(fontSize: 12, color: Colors.grey)),
+              ],
+            ),
+          )
+        else if (_ibanOwnerName != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.teal, size: 16),
+                const SizedBox(width: 6),
+                Text(_ibanOwnerName!, style: const TextStyle(fontSize: 13, color: Colors.teal, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          )
+        else if (_ibanLookupError != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 16),
+                const SizedBox(width: 6),
+                Text(_ibanLookupError!, style: const TextStyle(fontSize: 12, color: Colors.red)),
+              ],
+            ),
+          ),
         _customInput(
           label: "Alıcı Adı Soyadı",
-          hint: "Giriniz",
+          hint: _ibanOwnerName ?? "Giriniz",
           onChanged: (value) => ref.read(transferProvider.notifier).setRecipientName(value),
           initialValue: state.recipientName,
         ),
@@ -425,69 +537,54 @@ class TransferFlowScreen extends ConsumerWidget {
   // --- HESAPLARIM ARASI TRANSFER ---
   Widget _buildInterAccountTab(WidgetRef ref, double accountBalance) {
     final state = ref.watch(transferProvider);
-    final senderAccount = "98750438-1";
-    final recipientAccount = "98750438-4000";
-    final recipientBalance = 1500.0;
+    final accountsAsync = ref.watch(accountsProvider);
+    final accounts = accountsAsync.asData?.value.cast<Map<String, dynamic>>() ?? [];
+    final sender = accounts.isNotEmpty ? accounts.first : null;
+    final receiver = accounts.length > 1 ? accounts[1] : null;
+    // Hesabıma sekmesi için alıcı IBAN'ı local olarak tut, global state'i kirletme
+    final interAccountIban = receiver?['iban'] as String? ?? '';
+
+    Widget accountCard(Map<String, dynamic>? acc, String label, Color borderColor) {
+      if (acc == null) return const SizedBox();
+      final iban = acc['iban'] as String? ?? '';
+      final shortIban = iban.length > 8 ? iban.substring(iban.length - 8) : iban;
+      final balance = double.tryParse(acc['balance'].toString()) ?? 0.0;
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: borderColor),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            const SizedBox(height: 4),
+            Text(shortIban, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text(acc['name'] as String? ?? '', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            Text("${_formatAmount(balance)} TL",
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black, fontSize: 14)),
+          ],
+        ),
+      );
+    }
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
         const SizedBox(height: 16),
-        // Gönderen Hesap
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.teal.shade200),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("Gönderen Hesap", style: TextStyle(color: Colors.grey, fontSize: 12)),
-              const SizedBox(height: 4),
-              Text(senderAccount, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              const Text("Cari Hesap", style: TextStyle(color: Colors.grey, fontSize: 12)),
-              Text(
-                "${_formatAmount(accountBalance)} TL",
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black, fontSize: 14),
-              ),
-            ],
-          ),
-        ),
+        accountCard(sender, "Gönderen Hesap", Colors.teal.shade200),
         const SizedBox(height: 16),
         Center(
           child: Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.teal.shade100,
-            ),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.teal.shade100),
             child: const Icon(Icons.arrow_downward, color: Colors.teal),
           ),
         ),
         const SizedBox(height: 16),
-        // Alıcı Hesap
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.orange.shade200),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("Alıcı Hesap", style: TextStyle(color: Colors.grey, fontSize: 12)),
-              const SizedBox(height: 4),
-              Text(recipientAccount, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              const Text("Yatırım Hesabı", style: TextStyle(color: Colors.grey, fontSize: 12)),
-              Text(
-                "${_formatAmount(recipientBalance)} TL",
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black, fontSize: 14),
-              ),
-            ],
-          ),
-        ),
+        accountCard(receiver, "Alıcı Hesap", Colors.orange.shade200),
         const SizedBox(height: 16),
         _buildBalanceSwitchRow(ref, state, accountBalance),
         const SizedBox(height: 8),
@@ -532,12 +629,40 @@ class TransferFlowScreen extends ConsumerWidget {
           onChanged: (value) => ref.read(transferProvider.notifier).setDescription(value),
           initialValue: state.description,
         ),
+        const SizedBox(height: 16),
+        // Hesaplarım sekmesine özel İleri butonu
+        Builder(builder: (context) {
+          return PrimaryButton(
+            text: "İleri",
+            onPressed: () {
+              if (state.amount <= 0) return;
+              if (state.amount > accountBalance) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Yetersiz bakiye")),
+                );
+                return;
+              }
+              final receiverName = receiver != null ? (receiver['name'] as String? ?? '') : '';
+              ref.read(transferProvider.notifier).nextToConfirm(
+                interAccountIban,
+                receiverName,
+                state.amount,
+              );
+            },
+          );
+        }),
+        const SizedBox(height: 16),
       ],
     );
   }
 
   // --- ONAY VE BAŞARI EKRANLARI (SENİN KODUNDAKİLERLE AYNI) ---
   Widget _buildConfirmView(TransferFormState state, WidgetRef ref, BuildContext context) {
+    // senderAccountId'yi her zaman anlık accountsProvider'dan al
+    final accountsAsync = ref.watch(accountsProvider);
+    final senderAccount = accountsAsync.asData?.value.firstOrNull as Map<String, dynamic>?;
+    final senderAccountId = senderAccount?['id'] as String? ?? '';
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -549,30 +674,53 @@ class TransferFlowScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  _confirmRow("Alıcı", state.recipientName),
-                  _confirmRow("Bilgi", state.recipientInfo),
+                  _confirmRow("Alıcı", state.recipientName.isEmpty ? '-' : state.recipientName),
+                  _confirmRow("IBAN", state.recipientInfo),
                   const Divider(),
-                  _confirmRow("Tutar", "${state.amount} TL", isBold: true),
+                  _confirmRow("Tutar", "${_formatAmount(state.amount)} TL", isBold: true),
                   _confirmRow("Masraf", "0,00 TL"),
+                  if (state.description.isNotEmpty) _confirmRow("Açıklama", state.description),
                 ],
               ),
             ),
           ),
           const Spacer(),
-          PrimaryButton(
-            text: "Onayla ve Gönder",
-            onPressed: () {
-              if (!ref.read(accountBalanceProvider.notifier).canTransfer(state.amount)) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Yetersiz bakiye")),
-                );
-                return;
-              }
-
-              ref.read(accountBalanceProvider.notifier).deduct(state.amount);
-              ref.read(transferProvider.notifier).complete();
-            },
-          ),
+          if (_isSending)
+            const SizedBox(
+              height: 50,
+              child: Center(child: CircularProgressIndicator(color: Colors.teal, strokeWidth: 3)),
+            )
+          else
+            PrimaryButton(
+              text: "Onayla ve Gönder",
+              onPressed: () async {
+                if (senderAccountId.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Gönderen hesap bilgisi alınamadı")),
+                  );
+                  return;
+                }
+                setState(() => _isSending = true);
+                try {
+                  await ref.read(transferRepositoryProvider).sendMoney(
+                    senderAccountId: senderAccountId,
+                    receiverIban: state.recipientInfo,
+                    amount: state.amount,
+                    receiverName: state.recipientName.isEmpty ? null : state.recipientName,
+                    description: state.description.isEmpty ? null : state.description,
+                  );
+                  ref.invalidate(accountsProvider);
+                  ref.read(transferProvider.notifier).complete();
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+                    );
+                  }
+                  setState(() => _isSending = false);
+                }
+              },
+            ),
         ],
       ),
     );

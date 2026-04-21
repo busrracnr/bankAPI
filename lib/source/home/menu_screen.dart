@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../action/money_transfer/account_provider.dart';
+import '../../action/money_transfer/transfer_manager.dart';
+import '../../action/user/user_manager.dart';
+import '../login/login_screen.dart';
 import '../money_transfer/money_transfer_menu_screen.dart';
 
-class MenuScreen extends StatelessWidget {
+class MenuScreen extends ConsumerWidget {
   const MenuScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final List<MenuItemData> menuItems = [
       MenuItemData(
         icon: Icons.trending_up,
@@ -131,10 +136,46 @@ class MenuScreen extends StatelessWidget {
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 12),
-      itemCount: menuItems.length,
+      itemCount: menuItems.length + 1, // +1 for logout
       itemBuilder: (context, index) {
-        final item = menuItems[index];
-        return _buildMenuItem(item);
+        if (index == menuItems.length) {
+          // Hesaptan Çık butonu
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red.shade100),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red, size: 24),
+              title: const Text(
+                "Hesaptan Çık",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.red,
+                ),
+              ),
+              trailing: const Icon(Icons.chevron_right, color: Colors.red, size: 20),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              onTap: () async {
+                // Eski kullanıcıya ait tüm cache'i temizle
+                ref.invalidate(accountsProvider);
+                ref.invalidate(transferProvider);
+                await ref.read(userProvider.notifier).logout();
+                ref.read(isAuthenticatedProvider.notifier).logout();
+                if (context.mounted) {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (_) => false,
+                  );
+                }
+              },
+            ),
+          );
+        }
+        return _buildMenuItem(menuItems[index]);
       },
     );
   }
