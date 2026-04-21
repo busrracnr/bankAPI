@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/repositories/providers.dart';
 
 enum TransferStep { input, confirm, success }
 enum TransferType { iban, hesap, telefon, karekod, diger }
@@ -11,6 +12,7 @@ class TransferFormState {
   final double amount;
   final String description;
   final bool useFullBalance; // Bakiyenin tümünü kullan toggle
+  final String senderAccountId;
 
   TransferFormState({
     this.step = TransferStep.input,
@@ -20,6 +22,7 @@ class TransferFormState {
     this.amount = 0.0,
     this.description = "",
     this.useFullBalance = false,
+    this.senderAccountId = "",
   });
 
   TransferFormState copyWith({
@@ -30,6 +33,7 @@ class TransferFormState {
     double? amount,
     String? description,
     bool? useFullBalance,
+    String? senderAccountId,
   }) {
     return TransferFormState(
       step: step ?? this.step,
@@ -39,6 +43,7 @@ class TransferFormState {
       amount: amount ?? this.amount,
       description: description ?? this.description,
       useFullBalance: useFullBalance ?? this.useFullBalance,
+      senderAccountId: senderAccountId ?? this.senderAccountId,
     );
   }
 }
@@ -54,6 +59,10 @@ class TransferNotifier extends Notifier<TransferFormState> {
       recipientName: name,
       amount: amount,
     );
+  }
+
+  void setSenderAccountId(String id) {
+    state = state.copyWith(senderAccountId: id);
   }
 
   void setAmount(double amount) {
@@ -85,3 +94,15 @@ class TransferNotifier extends Notifier<TransferFormState> {
 }
 
 final transferProvider = NotifierProvider<TransferNotifier, TransferFormState>(() => TransferNotifier());
+
+// API üzerinden para gönderme
+final sendMoneyProvider = FutureProvider.family<void, Map<String, dynamic>>((ref, params) async {
+  final repo = ref.watch(transferRepositoryProvider);
+  await repo.sendMoney(
+    senderAccountId: params['senderAccountId'] as String,
+    receiverIban: params['receiverIban'] as String,
+    amount: params['amount'] as double,
+    receiverName: params['receiverName'] as String?,
+    description: params['description'] as String?,
+  );
+});

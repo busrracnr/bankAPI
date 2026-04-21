@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 class AccountBalanceCard extends StatelessWidget {
   final String accountNo;
+  final String iban;
   final double balance;
   final bool isBalanceVisible;
   final VoidCallback onBalanceToggle;
@@ -10,6 +11,7 @@ class AccountBalanceCard extends StatelessWidget {
   const AccountBalanceCard({
     super.key,
     required this.accountNo,
+    required this.iban,
     required this.balance,
     required this.isBalanceVisible,
     required this.onBalanceToggle,
@@ -39,7 +41,7 @@ class AccountBalanceCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 GestureDetector(
-                  onTap: () => _showShareMenu(context),
+                  onTap: () => _showShareMenu(context, iban),
                   child: const Icon(Icons.share_outlined, color: Colors.teal),
                 ),
                 const SizedBox(width: 10),
@@ -85,7 +87,7 @@ class AccountBalanceCard extends StatelessWidget {
     );
   }
 
-  void _showShareMenu(BuildContext context) {
+  void _showShareMenu(BuildContext context, String iban) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -107,9 +109,9 @@ class AccountBalanceCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                "TR09002050000098750438000001",
-                style: TextStyle(
+              Text(
+                iban,
+                style: const TextStyle(
                   fontSize: 12,
                   color: Colors.grey,
                 ),
